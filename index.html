@@ -66,19 +66,26 @@
 
   .speech {
     position:absolute; z-index:3; max-width:67%; padding:10px 13px;
-    color:#111; background:#fff; border:2px solid #171017; border-radius:22px;
+    color:#fff; background:rgba(12,6,11,.12); border:none; border-radius:0;
     font-size:clamp(11px,3vw,14px); font-weight:700; line-height:1.12;
-    text-align:center; box-shadow:0 3px 0 rgba(0,0,0,.25);
+    text-align:center; box-shadow:none; text-shadow:0 2px 8px rgba(0,0,0,.9);
     transform:scale(.85); opacity:0; transition:.25s ease;
   }
   .speech.show { opacity:1; transform:scale(1); }
-  .speech:after {
-    content:""; position:absolute; bottom:-8px; left:24%;
-    width:13px;height:13px;background:#fff;border-right:2px solid #171017;
-    border-bottom:2px solid #171017; transform:rotate(45deg);
+  #introBubble {
+    left:39%; top:38%;
+    width:clamp(150px,36vw,220px); min-height:110px;
+    padding:18px 18px 28px; display:flex; align-items:center; justify-content:center;
+    background:url("assets/bubble-intro.png") center / contain no-repeat;
+    border:none; box-shadow:none; color:#fff; text-shadow:0 2px 8px rgba(0,0,0,.85);
   }
-  #introBubble { left:39%; top:47%; }
-  #choiceBubble { left:39%; top:48%; }
+  #choiceBubble {
+    left:39%; top:39%;
+    width:clamp(150px,36vw,220px); min-height:110px;
+    padding:18px 18px 28px; display:flex; align-items:center; justify-content:center;
+    background:url("assets/bubble-intro.png") center / contain no-repeat;
+    border:none; box-shadow:none; color:#fff; text-shadow:0 2px 8px rgba(0,0,0,.85);
+  }
   #holdBubble { right:5%; top:57%; max-width:58%; }
 
   .question {
@@ -210,7 +217,7 @@
     <img class="room zoom" src="assets/room.png" alt="" onerror="this.style.display='none'">
     <div class="shade"></div><div class="bottom-vignette"></div>
     <span class="z one">Z</span><span class="z two">Z</span><span class="z three">z</span>
-    <div class="speech show" id="introBubble">IF SHE FINDS OUT,<br>WE'RE DONE</div>
+    <div class="speech show" id="introBubble" aria-label="Intro bubble"></div>
     <div class="tap-prompt">Tap to play</div>
   </section>
 
@@ -218,7 +225,7 @@
     <img class="room" src="assets/room.png" alt="" onerror="this.style.display='none'">
     <div class="shade"></div><div class="bottom-vignette"></div>
     <span class="z one">Z</span><span class="z two">Z</span><span class="z three">z</span>
-    <div class="speech show" id="choiceBubble">IF SHE FINDS OUT,<br>WE'RE DONE</div>
+    <div class="speech show" id="choiceBubble" aria-label="Choice bubble"></div>
     <div class="question">WHAT WOULD YOU<br>DO?</div>
     <div class="choices">
       <button class="choice" data-choice="truth">“We should tell her the truth.”</button>
