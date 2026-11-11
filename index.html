@@ -1,0 +1,541 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#120b12">
+<title>Secret Talk — Playable_18795</title>
+<style>
+  :root {
+    --pink: #ff3f98;
+    --pink-light: #ff75b6;
+    --ink: #160d15;
+    --white: #fff;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    width:100%; height:100%; margin:0; overflow:hidden;
+    background:#09070a; color:#fff;
+    font-family: Arial, Helvetica, sans-serif;
+    user-select:none; -webkit-user-select:none;
+    touch-action:manipulation;
+  }
+  #ad {
+    position:relative; width:100vw; height:100dvh; margin:auto; overflow:hidden;
+    background:#09070a;
+  }
+  @media (min-aspect-ratio: 9/16) {
+    #ad { width:min(100vw, 56.25dvh); height:min(100dvh, 177.7778vw); }
+  }
+  .scene {
+    position:absolute; inset:0; overflow:hidden; display:none;
+    background:#171017;
+  }
+  .scene.active { display:block; animation:sceneIn .45s ease both; }
+  @keyframes sceneIn { from{opacity:.4} to{opacity:1} }
+  .room {
+    position:absolute; inset:0; width:100%; height:100%;
+    object-fit:cover; object-position:center;
+  }
+  .room.zoom { animation: slowZoom 7s ease-in-out infinite alternate; }
+  @keyframes slowZoom { from{transform:scale(1)} to{transform:scale(1.075)} }
+  .shade {
+    position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(180deg,rgba(0,0,0,.04) 0%,transparent 42%,rgba(0,0,0,.32) 100%);
+  }
+  .bottom-vignette {
+    position:absolute; inset:35% 0 0;
+    background:linear-gradient(180deg,transparent,rgba(0,0,0,.42));
+    pointer-events:none;
+  }
+  .tap-prompt {
+    position:absolute; left:0; right:0; bottom:10.5%; text-align:center;
+    font-size:clamp(13px,3.5vw,17px); letter-spacing:.2px;
+    text-shadow:0 2px 5px #000; animation:blink 1s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.28} }
+  .z {
+    position:absolute; color:white; font-weight:900; text-shadow:0 2px 5px #000;
+    animation:floatZ 1.7s ease-in-out infinite;
+  }
+  .z.one { left:25%; top:22%; font-size:19px; }
+  .z.two { left:27%; top:18%; font-size:14px; animation-delay:.45s; }
+  .z.three { left:22%; top:25%; font-size:12px; animation-delay:.9s; }
+  @keyframes floatZ { 0%{opacity:0;transform:translateY(8px) scale(.7)} 35%{opacity:1} 100%{opacity:0;transform:translate(8px,-22px) scale(1.2)} }
+
+  .speech {
+    position:absolute; z-index:3; max-width:67%; padding:10px 13px;
+    color:#111; background:#fff; border:2px solid #171017; border-radius:22px;
+    font-size:clamp(11px,3vw,14px); font-weight:700; line-height:1.12;
+    text-align:center; box-shadow:0 3px 0 rgba(0,0,0,.25);
+    transform:scale(.85); opacity:0; transition:.25s ease;
+  }
+  .speech.show { opacity:1; transform:scale(1); }
+  .speech:after {
+    content:""; position:absolute; bottom:-8px; left:24%;
+    width:13px;height:13px;background:#fff;border-right:2px solid #171017;
+    border-bottom:2px solid #171017; transform:rotate(45deg);
+  }
+  #introBubble { left:39%; top:47%; }
+  #choiceBubble { left:39%; top:48%; }
+  #holdBubble { right:5%; top:57%; max-width:58%; }
+
+  .question {
+    position:absolute; left:5%; right:5%; bottom:29%;
+    text-align:center; font-weight:1000; font-style:italic;
+    font-size:clamp(27px,8vw,39px); line-height:.95;
+    text-shadow:2px 3px 0 #161019, -1px -1px 0 #161019;
+    transform:rotate(-3deg);
+  }
+  .choices {
+    position:absolute; left:10%; right:10%; bottom:10%;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .choice {
+    border:2px solid #191019; border-radius:11px; background:#fff; color:#111;
+    min-height:48px; padding:10px 12px; font-size:clamp(12px,3.2vw,15px);
+    font-weight:700; box-shadow:0 4px 0 rgba(0,0,0,.35);
+    animation:pulseChoice 1.8s ease-in-out infinite;
+    transition:transform .12s ease, box-shadow .12s ease, filter .12s ease;
+  }
+  .choice:nth-child(2) { animation-delay:.15s; }
+  .choice:hover, .choice:focus-visible { filter:brightness(1.04); }
+  .choice:active { transform:translateY(3px) scale(.99); box-shadow:0 1px 0 rgba(0,0,0,.35); }
+  @keyframes pulseChoice {
+    0%, 100% { transform:scale(1); box-shadow:0 4px 0 rgba(0,0,0,.35), 0 0 0 rgba(255,63,152,0); }
+    50% { transform:scale(1.015); box-shadow:0 6px 0 rgba(0,0,0,.35), 0 0 18px rgba(255,63,152,.22); }
+  }
+
+  .meters {
+    position:absolute; top:3.2%; left:4%; right:4%; z-index:4;
+    display:flex; flex-direction:column; gap:6px;
+    text-shadow:0 1px 3px #000;
+  }
+  .meter-labels { display:flex; justify-content:space-between; font-size:10px; font-weight:700; }
+  .meter-track { height:12px; border:1px solid rgba(255,255,255,.45); border-radius:20px; background:rgba(0,0,0,.55); overflow:hidden; }
+  .meter-fill { width:0%; height:100%; border-radius:20px; background:linear-gradient(90deg,#ffb33e,#ff3f98); transition:width .08s linear; }
+  .meter-title { font-size:10px; margin-bottom:-3px; }
+  .wake-alert {
+    position:absolute; z-index:6; left:4%; top:27%; max-width:70%;
+    padding:8px 12px; border:3px solid #160d15; border-radius:12px;
+    font-size:clamp(12px,4vw,20px); line-height:1.05;
+    font-weight:1000; font-style:italic; text-transform:uppercase;
+    color:#fff; background:#ff334f; box-shadow:0 5px 0 #160d15;
+    transform:rotate(-5deg) scale(.8); opacity:0; visibility:hidden;
+    transition:opacity .18s ease, transform .18s ease, visibility .18s;
+    text-shadow:1px 2px 0 rgba(0,0,0,.18);
+  }
+  .wake-alert.show {
+    opacity:1; visibility:visible; transform:rotate(-5deg) scale(1);
+  }
+
+  /* Червоне освітлення під час пробудження */
+  .wake-red-light {
+    position:absolute; inset:0; z-index:5;
+    background:rgba(255,0,25,0);
+    pointer-events:none; opacity:0;
+  }
+  .wake-red-light.active {
+    animation:wakeRedPulse .35s ease-in-out infinite alternate;
+  }
+  @keyframes wakeRedPulse {
+    from { opacity:.12; background:rgba(255,0,25,.25); }
+    to { opacity:.8; background:rgba(255,0,25,.65); }
+  }
+
+  .hold-area {
+    position:absolute; left:0; right:0; bottom:5%; z-index:7;
+    display:flex; flex-direction:column; align-items:center; gap:10px;
+  }
+  #holdButton {
+    width:clamp(106px,28vw,142px); aspect-ratio:1; border-radius:50%;
+    border:3px solid #190d18; background:#ed348e; color:#fff;
+    font-weight:1000; font-style:italic; font-size:clamp(17px,5vw,23px);
+    box-shadow:0 5px 0 rgba(0,0,0,.42),0 0 15px rgba(255,63,152,.3);
+    touch-action:none; cursor:pointer; transition:background .12s, transform .12s, box-shadow .12s;
+  }
+  #holdButton.is-held {
+    background:#ff1688; transform:scale(.94);
+    box-shadow:0 0 0 7px rgba(255,63,152,.22),0 0 32px rgba(255,63,152,.9);
+  }
+  #holdButton:disabled {
+    opacity:.65;
+    cursor:default;
+    pointer-events:none;
+  }
+  .hold-hint { font-size:clamp(10px,2.8vw,12px); text-shadow:0 2px 4px #000; }
+  .end-overlay {
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; padding:12% 8%;
+    text-align:center; background:rgba(12,4,10,.76);
+  }
+  .end-tag {
+    align-self:flex-start; background:#f33c86; color:#fff; padding:8px 12px;
+    font-size:clamp(12px,3.4vw,16px); font-weight:1000; font-style:italic;
+    transform:rotate(-5deg); border:2px solid #160d15; border-radius:5px;
+    margin-bottom:18px; box-shadow:0 3px 0 #160d15;
+  }
+  .end-title {
+    color:#ffb52e; font-size:clamp(30px,9vw,45px); line-height:.95;
+    font-weight:1000; font-style:italic; text-shadow:3px 4px 0 #28101a;
+    margin:0 0 18px; text-transform:uppercase;
+  }
+  .end-copy { max-width:95%; font-size:clamp(13px,3.6vw,16px); line-height:1.35; text-shadow:0 2px 4px #000; margin:0 0 25px; }
+  .cta {
+    width:100%; max-width:300px; min-height:51px; border:2px solid #25101e;
+    border-radius:12px; background:#ff4c9d; color:#fff; font-size:clamp(13px,3.5vw,16px);
+    font-weight:800; box-shadow:0 4px 0 #160b14; cursor:pointer;
+  }
+  .cta:active { transform:translateY(3px); box-shadow:0 1px 0 #160b14; }
+  .flash { position:absolute; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:20; }
+  .flash.red { background:rgba(255,63,90,.8); }
+  .flash.go { animation:flash .4s ease; }
+  .flash.red.go { animation:flashRed .9s ease; }
+  @keyframes flash { 0%{opacity:0} 35%{opacity:.55} 100%{opacity:0} }
+  @keyframes flashRed { 0%{opacity:0} 18%{opacity:.9} 55%{opacity:.42} 100%{opacity:0} }
+  @media (max-height:620px) {
+    .question { bottom:27%; font-size:27px; }
+    .choices { bottom:7%; gap:6px; }
+    .choice { min-height:40px; }
+    .hold-area { bottom:2%; gap:5px; }
+    #holdButton { width:95px; }
+  }
+</style>
+</head>
+<body>
+<main id="ad" aria-label="Secret Talk playable ad">
+
+  <section class="scene active" id="scene1">
+    <img class="room zoom" src="assets/room.png" alt="" onerror="this.style.display='none'">
+    <div class="shade"></div><div class="bottom-vignette"></div>
+    <span class="z one">Z</span><span class="z two">Z</span><span class="z three">z</span>
+    <div class="speech show" id="introBubble">IF SHE FINDS OUT,<br>WE'RE DONE</div>
+    <div class="tap-prompt">Tap to play</div>
+  </section>
+
+  <section class="scene" id="scene2">
+    <img class="room" src="assets/room.png" alt="" onerror="this.style.display='none'">
+    <div class="shade"></div><div class="bottom-vignette"></div>
+    <span class="z one">Z</span><span class="z two">Z</span><span class="z three">z</span>
+    <div class="speech show" id="choiceBubble">IF SHE FINDS OUT,<br>WE'RE DONE</div>
+    <div class="question">WHAT WOULD YOU<br>DO?</div>
+    <div class="choices">
+      <button class="choice" data-choice="truth">“We should tell her the truth.”</button>
+      <button class="choice" data-choice="secret">“Keep it a secret. Tonight.”</button>
+    </div>
+  </section>
+
+  <section class="scene" id="scene3">
+    <img class="room" src="assets/room.png" alt="" onerror="this.style.display='none'">
+    <div class="shade"></div><div class="bottom-vignette"></div>
+    <span class="z one">Z</span><span class="z two">Z</span><span class="z three">z</span>
+    <div class="meters">
+      <div class="meter-title">Secret talk</div>
+      <div class="meter-track"><div class="meter-fill" id="talkFill"></div></div>
+      <div class="meter-labels"><span>Quiet</span><span>Too loud</span></div>
+      <div class="meter-track"><div class="meter-fill" id="noiseFill"></div></div>
+    </div>
+    <div class="speech" id="holdBubble">Nobody can find out.</div>
+    <div class="wake-alert" id="wakeAlert">SHE'S WAKING UP!</div>
+    <div class="wake-red-light" id="wakeRedLight"></div>
+    <div class="hold-area">
+      <button id="holdButton" type="button">HOLD</button>
+      <div class="hold-hint">Hold to whisper. Let go when she stirs.</div>
+    </div>
+  </section>
+
+  <section class="scene" id="scene4">
+    <img class="room" src="assets/room.png" alt="" onerror="this.style.display='none'">
+    <div class="shade"></div>
+    <div class="end-overlay">
+      <div class="end-tag" id="endTag">SHE DIDN'T WAKE UP!</div>
+      <h1 class="end-title" id="endTitle">SHE DIDN'T<br>WAKE UP... YET</h1>
+      <p class="end-copy" id="endCopy">One more night. One more chance to stay quiet.</p>
+      <button class="cta" id="ctaButton">Read what happens next</button>
+    </div>
+  </section>
+  <div class="flash" id="flash"></div>
+</main>
+
+<audio id="music" src="assets/music-loop.mp3" loop preload="auto"></audio>
+<audio id="whisper" src="assets/whisper.mp3" loop preload="auto"></audio>
+<audio id="clickSound" src="assets/click.mp3" preload="auto"></audio>
+<audio id="happyMusic" src="assets/happy-end.mp3" loop preload="auto"></audio>
+<audio id="badMusic" src="assets/bad-end.mp3" loop preload="auto"></audio>
+
+<script>
+(() => {
+  const CTA_URL = "https://honeytoons.com/comic/roxys-journey-sp/prologue"; // TODO: replace with the real landing page
+  const WAKE_THRESHOLD = 65;
+  const WAKE_TO_END_DELAY = 1600;
+
+  const scenes = [...document.querySelectorAll(".scene")];
+  const music = document.getElementById("music");
+  const whisper = document.getElementById("whisper");
+  const clickSound = document.getElementById("clickSound");
+  const happyMusic = document.getElementById("happyMusic");
+  const badMusic = document.getElementById("badMusic");
+  const holdButton = document.getElementById("holdButton");
+  const talkFill = document.getElementById("talkFill");
+  const noiseFill = document.getElementById("noiseFill");
+  const holdBubble = document.getElementById("holdBubble");
+  const wakeAlert = document.getElementById("wakeAlert");
+  const wakeRedLight = document.getElementById("wakeRedLight");
+  const flash = document.getElementById("flash");
+
+  let currentScene = 1;
+  let holding = false;
+  let lastFrame = 0;
+  let noise = 0;
+  let talk = 0;
+  let wokeUp = false;
+  let endingChosen = false;
+  let dialogIndex = 0;
+  let dialogTimer = null;
+  let sceneTimer = null;
+  let wakeTimer = null;
+
+  // Only the two original dialogue lines remain.
+  // The third line appears only when she wakes up.
+  const dialogs = [
+    "Nobody can find out.",
+    "She'll never notice... right?"
+  ];
+
+  function playSound(audio, volume = 1, restart = false) {
+    if (!audio) return;
+    try {
+      if (restart) audio.currentTime = 0;
+      audio.volume = Math.max(0, Math.min(1, volume));
+      const p = audio.play();
+      if (p && p.catch) p.catch(() => {});
+    } catch (_) {}
+  }
+
+  function stopSound(audio) {
+    if (!audio) return;
+    audio.pause();
+    try { audio.currentTime = 0; } catch (_) {}
+  }
+
+  function click() {
+    playSound(clickSound, .8, true);
+  }
+
+  function showScene(number) {
+    currentScene = number;
+    scenes.forEach((scene, i) => scene.classList.toggle("active", i === number - 1));
+    flash.classList.remove("go");
+    void flash.offsetWidth;
+    flash.classList.add("go");
+  }
+
+  function startStory() {
+    if (currentScene !== 1) return;
+    click();
+    playSound(music, .55);
+    showScene(2);
+  }
+
+  function startHoldScene() {
+    if (currentScene !== 2) return;
+
+    clearInterval(dialogTimer);
+    clearTimeout(sceneTimer);
+    clearTimeout(wakeTimer);
+
+    showScene(3);
+
+    talk = 0;
+    noise = 0;
+    wokeUp = false;
+    endingChosen = false;
+    holding = false;
+    lastFrame = 0;
+
+    holdButton.disabled = false;
+    holdButton.classList.remove("is-held");
+
+    wakeAlert.classList.remove("show");
+    wakeRedLight.classList.remove("active");
+    flash.classList.remove("red", "go");
+
+    updateMeters();
+
+    dialogIndex = 0;
+    showDialog();
+
+    dialogTimer = setTimeout(() => {
+      if (currentScene === 3 && !endingChosen && !wokeUp) {
+        dialogIndex = 1;
+        showDialog();
+      }
+    }, 4200);
+
+    sceneTimer = setTimeout(() => {
+      if (currentScene === 3 && !wokeUp) finishScene();
+    }, 19000);
+  }
+
+  function showDialog(text) {
+    holdBubble.textContent = text || dialogs[dialogIndex];
+    holdBubble.classList.remove("show");
+    requestAnimationFrame(() => {
+      if (currentScene === 3) holdBubble.classList.add("show");
+    });
+  }
+
+  function updateMeters() {
+    talkFill.style.width = talk.toFixed(1) + "%";
+    noiseFill.style.width = noise.toFixed(1) + "%";
+  }
+
+  function beginHold(event) {
+    if (currentScene !== 3 || endingChosen || wokeUp || holding || holdButton.disabled) return;
+
+    event.preventDefault();
+
+    holding = true;
+    holdButton.classList.add("is-held");
+
+    playSound(whisper, .08);
+
+    try {
+      holdButton.setPointerCapture(event.pointerId);
+    } catch (_) {}
+  }
+
+  function endHold(event) {
+    if (!holding) return;
+
+    if (event) event.preventDefault();
+
+    holding = false;
+    holdButton.classList.remove("is-held");
+    stopSound(whisper);
+  }
+
+  function triggerWakeUp() {
+    if (wokeUp || endingChosen) return;
+
+    // Lock the bad ending immediately.
+    wokeUp = true;
+    holding = false;
+
+    clearTimeout(sceneTimer);
+    clearTimeout(dialogTimer);
+
+    holdButton.classList.remove("is-held");
+    holdButton.disabled = true;
+
+    stopSound(whisper);
+
+    wakeAlert.classList.add("show");
+    wakeRedLight.classList.add("active");
+
+    showDialog("Meet me in the kitchen.");
+
+    wakeTimer = setTimeout(() => {
+      if (currentScene === 3 && !endingChosen) {
+        finishScene();
+      }
+    }, WAKE_TO_END_DELAY);
+  }
+
+  function frame(now) {
+    if (currentScene === 3 && !endingChosen && !wokeUp) {
+      const dt = Math.min((now - (lastFrame || now)) / 1000, .05);
+
+      if (holding) {
+        noise = Math.min(100, noise + dt * 23);
+        talk = Math.min(100, talk + dt * 5.8);
+
+        whisper.volume = Math.min(.95, .08 + noise / 115);
+
+        if (noise >= WAKE_THRESHOLD) {
+          triggerWakeUp();
+        }
+      } else {
+        noise = Math.max(0, noise - dt * 32);
+      }
+
+      updateMeters();
+    }
+
+    lastFrame = now;
+    requestAnimationFrame(frame);
+  }
+
+  requestAnimationFrame(frame);
+
+  function finishScene() {
+    if (currentScene !== 3 || endingChosen) return;
+
+    endingChosen = true;
+
+    if (holding) endHold();
+
+    clearTimeout(dialogTimer);
+    clearTimeout(sceneTimer);
+    clearTimeout(wakeTimer);
+
+    stopSound(whisper);
+
+    showEnding(wokeUp);
+  }
+
+  function showEnding(isBadEnd) {
+    stopSound(music);
+    stopSound(happyMusic);
+    stopSound(badMusic);
+
+    if (isBadEnd) {
+      document.getElementById("endTag").textContent = "SHE'S WAKING UP!";
+      document.getElementById("endTitle").innerHTML = "BUSTED!";
+      document.getElementById("endCopy").textContent =
+        "She opened her eyes at the worst possible moment. Find out what she saw.";
+
+      playSound(badMusic, .65);
+    } else {
+      document.getElementById("endTag").textContent = "SHE DIDN'T WAKE UP!";
+      document.getElementById("endTitle").innerHTML = "SHE DIDN'T<br>WAKE UP... YET";
+      document.getElementById("endCopy").textContent =
+        "One more night. One more chance to stay quiet.";
+
+      playSound(happyMusic, .65);
+    }
+
+    showScene(4);
+  }
+
+  document.getElementById("scene1").addEventListener("pointerdown", startStory);
+
+  document.querySelectorAll(".choice").forEach(button => {
+    button.addEventListener("click", () => {
+      if (currentScene !== 2) return;
+      click();
+      startHoldScene();
+    });
+  });
+
+  holdButton.addEventListener("pointerdown", beginHold);
+  holdButton.addEventListener("pointerup", endHold);
+  holdButton.addEventListener("pointercancel", endHold);
+  holdButton.addEventListener("lostpointercapture", endHold);
+
+  window.addEventListener("pointerup", endHold);
+  window.addEventListener("blur", endHold);
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) endHold();
+  });
+
+  document.getElementById("ctaButton").addEventListener("click", () => {
+    click();
+    window.location.href = CTA_URL;
+  });
+})();
+</script>
+</body>
+</html>
