@@ -309,6 +309,7 @@
 (() => {
   const CTA_URL = "https://honeytoons.com/comic/roxys-journey-sp/prologue"; // TODO: replace with the real landing page
   const WAKE_THRESHOLD = 65;
+  const TALK_WIN_THRESHOLD = 80;
   const WAKE_TO_END_DELAY = 1600;
 
   const scenes = [...document.querySelectorAll(".scene")];
@@ -499,6 +500,8 @@
 
         if (noise >= WAKE_THRESHOLD) {
           triggerWakeUp();
+        } else if (talk >= TALK_WIN_THRESHOLD) {
+          finishScene();
         }
       } else {
         noise = Math.max(0, noise - dt * 32);
