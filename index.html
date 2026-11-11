@@ -66,9 +66,9 @@
 
   .speech {
     position:absolute; z-index:3; max-width:67%; padding:10px 13px;
-    color:#fff; background:rgba(12,6,11,.12); border:none; border-radius:0;
+    color:#160d15; background:#fff; border:none; border-radius:12px;
     font-size:clamp(11px,3vw,14px); font-weight:700; line-height:1.12;
-    text-align:center; box-shadow:none; text-shadow:0 2px 8px rgba(0,0,0,.9);
+    text-align:center; box-shadow:0 2px 8px rgba(0,0,0,.25); text-shadow:none;
     transform:scale(.85); opacity:0; transition:.25s ease;
   }
   .speech.show { opacity:1; transform:scale(1); }
@@ -155,6 +155,20 @@
     position:absolute; left:0; right:0; bottom:5%; z-index:7;
     display:flex; flex-direction:column; align-items:center; gap:10px;
   }
+  .hold-pointer {
+    position:absolute; left:calc(50% + 36px); top:24px; z-index:1;
+    font-size:42px; line-height:1; pointer-events:none;
+    filter:grayscale(1) brightness(0) invert(1) drop-shadow(0 2px 2px rgba(0,0,0,.65));
+    transform:rotate(-45deg);
+    animation:pointAtHold .8s ease-in-out infinite alternate;
+    transition:opacity .15s ease;
+  }
+  @keyframes pointAtHold {
+    from { transform:rotate(-45deg) translateY(4px); }
+    to { transform:rotate(-45deg) translateY(-4px); }
+  }
+  .hold-area.is-held .hold-pointer,
+  .hold-area.is-done .hold-pointer { opacity:0; }
   #holdButton {
     width:clamp(106px,28vw,142px); aspect-ratio:1; border-radius:50%;
     border:3px solid #190d18; background:#ed348e; color:#fff;
@@ -195,6 +209,18 @@
     font-weight:800; box-shadow:0 4px 0 #160b14; cursor:pointer;
   }
   .cta:active { transform:translateY(3px); box-shadow:0 1px 0 #160b14; }
+  .sound-toggle {
+    position:absolute; top:max(12px,env(safe-area-inset-top)); right:12px; z-index:10;
+    display:grid; place-items:center; width:42px; height:42px; padding:8px;
+    border:2px solid #160d15; border-radius:50%; background:#fff; color:#160d15;
+    cursor:pointer;
+    box-shadow:0 3px 0 rgba(0,0,0,.35);
+  }
+  .sound-toggle:active { transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,.35); }
+  .sound-toggle svg { width:22px; height:22px; fill:currentColor; }
+  .sound-toggle .sound-waves, .sound-toggle .sound-mute-mark { display:none; }
+  .sound-toggle:not(.is-muted) .sound-waves,
+  .sound-toggle.is-muted .sound-mute-mark { display:block; }
   .flash { position:absolute; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:20; }
   .flash.red { background:rgba(255,63,90,.8); }
   .flash.go { animation:flash .4s ease; }
@@ -248,6 +274,7 @@
     <div class="wake-red-light" id="wakeRedLight"></div>
     <div class="hold-area">
       <button id="holdButton" type="button">HOLD</button>
+      <span class="hold-pointer" aria-hidden="true">👆</span>
       <div class="hold-hint">Hold to whisper. Let go when she stirs.</div>
     </div>
   </section>
@@ -262,6 +289,13 @@
       <button class="cta" id="ctaButton">Read what happens next</button>
     </div>
   </section>
+  <button class="sound-toggle" id="soundToggle" type="button" aria-label="Mute sound" aria-pressed="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 9v6h4l5 4V5L7 9H3z"></path>
+      <path class="sound-waves" d="M16.5 12a4.5 4.5 0 0 0-2.5-4.03v8.05A4.5 4.5 0 0 0 16.5 12zM14 3.23v2.06a7 7 0 0 1 0 13.42v2.06a9 9 0 0 0 0-17.54z"></path>
+      <path class="sound-mute-mark" d="m16.6 12 3.2-3.2-1.4-1.4-3.2 3.2-3.2-3.2-1.4 1.4 3.2 3.2-3.2 3.2 1.4 1.4 3.2-3.2 3.2 3.2 1.4-1.4z"></path>
+    </svg>
+  </button>
   <div class="flash" id="flash"></div>
 </main>
 
@@ -283,6 +317,9 @@
   const clickSound = document.getElementById("clickSound");
   const happyMusic = document.getElementById("happyMusic");
   const badMusic = document.getElementById("badMusic");
+  const soundToggle = document.getElementById("soundToggle");
+  const holdArea = document.querySelector(".hold-area");
+  const audioElements = [music, whisper, clickSound, happyMusic, badMusic];
   const holdButton = document.getElementById("holdButton");
   const talkFill = document.getElementById("talkFill");
   const noiseFill = document.getElementById("noiseFill");
@@ -298,9 +335,9 @@
   let talk = 0;
   let wokeUp = false;
   let endingChosen = false;
+  let soundMuted = false;
   let dialogIndex = 0;
   let dialogTimer = null;
-  let sceneTimer = null;
   let wakeTimer = null;
 
   // Only the two original dialogue lines remain.
@@ -315,6 +352,7 @@
     try {
       if (restart) audio.currentTime = 0;
       audio.volume = Math.max(0, Math.min(1, volume));
+      audio.muted = soundMuted;
       const p = audio.play();
       if (p && p.catch) p.catch(() => {});
     } catch (_) {}
@@ -348,8 +386,7 @@
   function startHoldScene() {
     if (currentScene !== 2) return;
 
-    clearInterval(dialogTimer);
-    clearTimeout(sceneTimer);
+    clearTimeout(dialogTimer);
     clearTimeout(wakeTimer);
 
     showScene(3);
@@ -363,6 +400,7 @@
 
     holdButton.disabled = false;
     holdButton.classList.remove("is-held");
+    holdArea.classList.remove("is-held", "is-done");
 
     wakeAlert.classList.remove("show");
     wakeRedLight.classList.remove("active");
@@ -380,9 +418,6 @@
       }
     }, 4200);
 
-    sceneTimer = setTimeout(() => {
-      if (currentScene === 3 && !wokeUp) finishScene();
-    }, 19000);
   }
 
   function showDialog(text) {
@@ -405,6 +440,7 @@
 
     holding = true;
     holdButton.classList.add("is-held");
+    holdArea.classList.add("is-held");
 
     playSound(whisper, .08);
 
@@ -420,6 +456,7 @@
 
     holding = false;
     holdButton.classList.remove("is-held");
+    holdArea.classList.remove("is-held");
     stopSound(whisper);
   }
 
@@ -429,8 +466,8 @@
     // Lock the bad ending immediately.
     wokeUp = true;
     holding = false;
+    holdArea.classList.add("is-done");
 
-    clearTimeout(sceneTimer);
     clearTimeout(dialogTimer);
 
     holdButton.classList.remove("is-held");
@@ -484,7 +521,6 @@
     if (holding) endHold();
 
     clearTimeout(dialogTimer);
-    clearTimeout(sceneTimer);
     clearTimeout(wakeTimer);
 
     stopSound(whisper);
@@ -517,6 +553,15 @@
   }
 
   document.getElementById("scene1").addEventListener("pointerdown", startStory);
+
+  soundToggle.addEventListener("pointerdown", event => event.stopPropagation());
+  soundToggle.addEventListener("click", () => {
+    soundMuted = !soundMuted;
+    audioElements.forEach(audio => { audio.muted = soundMuted; });
+    soundToggle.classList.toggle("is-muted", soundMuted);
+    soundToggle.setAttribute("aria-label", soundMuted ? "Unmute sound" : "Mute sound");
+    soundToggle.setAttribute("aria-pressed", String(soundMuted));
+  });
 
   document.querySelectorAll(".choice").forEach(button => {
     button.addEventListener("click", () => {
