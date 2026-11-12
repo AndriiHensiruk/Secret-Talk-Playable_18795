@@ -206,9 +206,14 @@
   .cta {
     width:100%; max-width:300px; min-height:51px; border:2px solid #25101e;
     border-radius:12px; background:#ff4c9d; color:#fff; font-size:clamp(13px,3.5vw,16px);
-    font-weight:800; box-shadow:0 4px 0 #160b14; cursor:pointer;
+    font-weight:800; box-shadow:0 4px 0 #160b14, 0 0 18px rgba(255,76,157,.55); cursor:pointer;
+    animation:ctaPulse 1.6s ease-in-out infinite;
   }
   .cta:active { transform:translateY(3px); box-shadow:0 1px 0 #160b14; }
+  @keyframes ctaPulse {
+    0%, 100% { transform:scale(1); box-shadow:0 4px 0 #160b14, 0 0 14px rgba(255,76,157,.45); }
+    50% { transform:scale(1.035); box-shadow:0 5px 0 #160b14, 0 0 26px rgba(255,76,157,.9); }
+  }
   .sound-toggle {
     position:absolute; top:max(12px,env(safe-area-inset-top)); right:12px; z-index:10;
     display:grid; place-items:center; width:42px; height:42px; padding:8px;
@@ -240,7 +245,7 @@
 <main id="ad" aria-label="Secret Talk playable ad">
 
   <section class="scene active" id="scene1">
-    <img class="room zoom" src="assets/room.png" alt="" onerror="this.style.display='none'">
+    <img class="room zoom" src="assets/room.webp" alt="" onerror="this.style.display='none'">
     <div class="shade"></div><div class="bottom-vignette"></div>
     <span class="z one">Z</span><span class="z two">Z</span><span class="z three">z</span>
     <div class="speech show" id="introBubble" aria-label="Intro bubble"></div>
@@ -248,7 +253,7 @@
   </section>
 
   <section class="scene" id="scene2">
-    <img class="room" src="assets/room.png" alt="" onerror="this.style.display='none'">
+    <img class="room" src="assets/room.webp" alt="" onerror="this.style.display='none'">
     <div class="shade"></div><div class="bottom-vignette"></div>
     <span class="z one">Z</span><span class="z two">Z</span><span class="z three">z</span>
     <div class="speech show" id="choiceBubble" aria-label="Choice bubble"></div>
@@ -260,7 +265,7 @@
   </section>
 
   <section class="scene" id="scene3">
-    <img class="room" src="assets/room.png" alt="" onerror="this.style.display='none'">
+    <img class="room" src="assets/room.webp" alt="" onerror="this.style.display='none'">
     <div class="shade"></div><div class="bottom-vignette"></div>
     <span class="z one">Z</span><span class="z two">Z</span><span class="z three">z</span>
     <div class="meters">
@@ -280,7 +285,7 @@
   </section>
 
   <section class="scene" id="scene4">
-    <img class="room" src="assets/room.png" alt="" onerror="this.style.display='none'">
+    <img class="room" src="assets/room.webp" alt="" onerror="this.style.display='none'">
     <div class="shade"></div>
     <div class="end-overlay">
       <div class="end-tag" id="endTag">SHE DIDN'T WAKE UP!</div>
@@ -302,8 +307,8 @@
 <audio id="music" src="assets/music-loop.mp3" loop preload="auto"></audio>
 <audio id="whisper" src="assets/whisper.mp3" loop preload="auto"></audio>
 <audio id="clickSound" src="assets/click.mp3" preload="auto"></audio>
-<audio id="happyMusic" src="assets/happy-end.mp3" loop preload="auto"></audio>
-<audio id="badMusic" src="assets/bad-end.mp3" loop preload="auto"></audio>
+<audio id="happyMusic" src="assets/happy-end.mp3" preload="auto"></audio>
+<audio id="badMusic" src="assets/bad-end.mp3" preload="auto"></audio>
 
 <script>
 (() => {
@@ -341,8 +346,6 @@
   let dialogTimer = null;
   let wakeTimer = null;
 
-  // Only the two original dialogue lines remain.
-  // The third line appears only when she wakes up.
   const dialogs = [
     "Nobody can find out.",
     "She'll never notice... right?"
@@ -363,6 +366,11 @@
     if (!audio) return;
     audio.pause();
     try { audio.currentTime = 0; } catch (_) {}
+  }
+
+  function startEndingSound(isBadEnd) {
+    stopSound(music);
+    playSound(isBadEnd ? badMusic : happyMusic, .65);
   }
 
   function click() {
@@ -475,6 +483,7 @@
     holdButton.disabled = true;
 
     stopSound(whisper);
+    startEndingSound(true);
 
     wakeAlert.classList.add("show");
     wakeRedLight.classList.add("active");
@@ -527,29 +536,23 @@
     clearTimeout(wakeTimer);
 
     stopSound(whisper);
+    if (!wokeUp) startEndingSound(false);
 
     showEnding(wokeUp);
   }
 
   function showEnding(isBadEnd) {
-    stopSound(music);
-    stopSound(happyMusic);
-    stopSound(badMusic);
-
     if (isBadEnd) {
       document.getElementById("endTag").textContent = "SHE'S WAKING UP!";
       document.getElementById("endTitle").innerHTML = "BUSTED!";
       document.getElementById("endCopy").textContent =
         "She opened her eyes at the worst possible moment. Find out what she saw.";
 
-      playSound(badMusic, .65);
     } else {
       document.getElementById("endTag").textContent = "SHE DIDN'T WAKE UP!";
       document.getElementById("endTitle").innerHTML = "SHE DIDN'T<br>WAKE UP... YET";
       document.getElementById("endCopy").textContent =
         "One more night. One more chance to stay quiet.";
-
-      playSound(happyMusic, .65);
     }
 
     showScene(4);
